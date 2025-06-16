@@ -22,28 +22,34 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl_conversions/pcl_conversions.h>
 
-class dlio::MapNode: public rclcpp::Node {
+class dlio::MapNode : public rclcpp::Node
+{
 
 public:
-
   MapNode();
   ~MapNode();
 
   void start();
 
 private:
-
   void getParams();
 
-  void callbackKeyframe(const sensor_msgs::msg::PointCloud2::ConstSharedPtr& keyframe);
+  void callbackKeyframe(const sensor_msgs::msg::PointCloud2::ConstSharedPtr &keyframe);
 
   void savePCD(std::shared_ptr<direct_lidar_inertial_odometry::srv::SavePCD::Request> req,
                std::shared_ptr<direct_lidar_inertial_odometry::srv::SavePCD::Response> res);
 
-
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr keyframe_sub;
   rclcpp::CallbackGroup::SharedPtr keyframe_cb_group, save_pcd_cb_group;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr map_pub;
+
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr local_map_pub;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr global_map_sub;
+  void callbackGlobalMap(const sensor_msgs::msg::PointCloud2::ConstSharedPtr &global_map);
+
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr latest_odom_sub;
+  nav_msgs::msg::Odometry::ConstSharedPtr latest_odom_;
+  void callbackLatestOdom(const nav_msgs::msg::Odometry::ConstSharedPtr &odom);
 
   rclcpp::Service<direct_lidar_inertial_odometry::srv::SavePCD>::SharedPtr save_pcd_srv;
 
@@ -54,4 +60,5 @@ private:
 
   double leaf_size_;
 
+  // for local map
 };
