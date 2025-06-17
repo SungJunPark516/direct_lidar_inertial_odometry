@@ -46,6 +46,8 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr local_map_pub;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr global_map_sub;
   void callbackGlobalMap(const sensor_msgs::msg::PointCloud2::ConstSharedPtr &global_map);
+  rclcpp::TimerBase::SharedPtr map_pub_timer_;
+  void publishMaps();
 
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr latest_odom_sub;
   nav_msgs::msg::Odometry::ConstSharedPtr latest_odom_;

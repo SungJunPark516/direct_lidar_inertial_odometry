@@ -33,7 +33,7 @@ dlio::MapNode::MapNode() : Node("dlio_map_node")
   this->dlio_map = std::make_shared<pcl::PointCloud<PointType>>();
 
   // local map
-  this->local_map_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>("local_map", 100);
+  this->local_map_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>("/Localmap", 100);
   this->global_map_sub = this->create_subscription<sensor_msgs::msg::PointCloud2>("map", 10,
                                                                                   std::bind(&dlio::MapNode::callbackGlobalMap, this, std::placeholders::_1));
   this->latest_odom_sub = this->create_subscription<nav_msgs::msg::Odometry>("latest_odom", 10,
@@ -55,6 +55,25 @@ void dlio::MapNode::getParams()
 
 void dlio::MapNode::start()
 {
+  // timer that publishes the global map every 200ms
+  this->map_pub_timer_ = this->create_wall_timer(
+      std::chrono::milliseconds(200),
+      std::bind(&dlio::MapNode::publishMaps, this));
+}
+
+void dlio::MapNode::publishMaps()
+{
+  // 1. global map publish (dlio_map -> map_pub)
+  if (this->dlio_map && !this->dlio_map->empty())
+  {
+    sensor_msgs::msg::PointCloud2 global_map_msg;
+    pcl::toROSMsg(*this->dlio_map, global_map_msg);
+    global_map_msg.header.stamp = this->get_clock()->now();
+    global_map_msg.header.frame_id = this->odom_frame;
+    this->map_pub->publish(global_map_msg);
+  }
+
+  // 2. local map은 이미 global_map_sub callback에서 처리 중
 }
 
 void dlio::MapNode::callbackKeyframe(const sensor_msgs::msg::PointCloud2::ConstSharedPtr &keyframe)
