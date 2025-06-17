@@ -36,9 +36,10 @@ dlio::MapNode::MapNode() : Node("dlio_map_node")
   this->local_map_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>("/Localmap", 100);
   this->global_map_sub = this->create_subscription<sensor_msgs::msg::PointCloud2>("map", 10,
                                                                                   std::bind(&dlio::MapNode::callbackGlobalMap, this, std::placeholders::_1));
-  this->latest_odom_sub = this->create_subscription<nav_msgs::msg::Odometry>("latest_odom", 10,
+  this->latest_odom_sub = this->create_subscription<nav_msgs::msg::Odometry>("/dlio/odom_node/odom", 10,
                                                                              std::bind(&dlio::MapNode::callbackLatestOdom, this, std::placeholders::_1));
   pcl::console::setVerbosityLevel(pcl::console::L_ERROR);
+  start();
 }
 
 dlio::MapNode::~MapNode() {}
@@ -69,7 +70,7 @@ void dlio::MapNode::publishMaps()
     sensor_msgs::msg::PointCloud2 global_map_msg;
     pcl::toROSMsg(*this->dlio_map, global_map_msg);
     global_map_msg.header.stamp = this->get_clock()->now();
-    global_map_msg.header.frame_id = this->odom_frame;
+    global_map_msg.header.frame_id = "map";
     this->map_pub->publish(global_map_msg);
   }
 

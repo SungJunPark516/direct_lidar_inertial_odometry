@@ -1,0 +1,39 @@
+###########################################################
+#                                                         #
+# Copyright (c)                                           #
+#                                                         #
+# The Verifiable & Control-Theoretic Robotics (VECTR) Lab #
+# University of California, Los Angeles                   #
+#                                                         #
+# Authors: Kenny J. Chen, Ryan Nemiroff, Brett T. Lopez   #
+# Contact: {kennyjchen, ryguyn, btlopez}@ucla.edu         #
+#                                                         #
+###########################################################
+
+/**:
+  ros__parameters:
+
+    version: 1.1.1
+
+    adaptive: true
+
+    pointcloud/deskew: true
+    pointcloud/voxelize: true
+
+    imu/calibration: true
+    imu/intrinsics/accel/bias: [ 0.0, 0.0, 0.0 ]
+    imu/intrinsics/accel/sm:   [ 1.,  0.,  0.,
+                                 0.,  1.,  0.,
+                                 0.,  0.,  1. ]
+    imu/intrinsics/gyro/bias: [ 0.0, 0.0, 0.0 ]
+    # position of IMU chip in the point cloud coordinates is x=11mm, y=23.29mm, z=-44.12 mm
+    # extrinsics/baselink2imu/t: [ 0.011, 0.02329, 0.0986] # [ 0.006253, -0.011775, 0.007645 ] use mid360
+    extrinsics/baselink2imu/t: [ 0.0, 0.0, 0.125] # for 8inch drone [ 0.006253, -0.011775, 0.007645 ] use mid360
+    # extrinsics/baselink2imu/t: [ 0.0, 0.0, 0.0] # [ 0.006253, -0.011775, 0.007645 ] use drone imu
+    extrinsics/baselink2imu/R: [ 1.,  0.,  0.,
+                                 0.,  1.,  0.,
+                                 0.,  0.,  1. ]
+    extrinsics/baselink2lidar/t: [ -0.011, -0.02329,  0.169 ] # for 8inch drone 
+    extrinsics/baselink2lidar/R: [ 1.,  0.,  0.,
+                                   0.,  1.,  0.,
+                                   0.,  0.,  1. ]
