@@ -16,6 +16,10 @@
 #include "rclcpp/rclcpp.hpp"
 #include "direct_lidar_inertial_odometry/srv/save_pcd.hpp"
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#include <nav_msgs/msg/odometry.hpp>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
 
 // PCL
 #include <pcl/filters/voxel_grid.h>
@@ -45,7 +49,7 @@ private:
 
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr local_map_pub;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr global_map_sub;
-  void callbackGlobalMap(const sensor_msgs::msg::PointCloud2::ConstSharedPtr &global_map);
+  void callbackGlobalMap(const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg);
   rclcpp::TimerBase::SharedPtr map_pub_timer_;
   void publishMaps();
 

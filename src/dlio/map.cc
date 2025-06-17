@@ -151,7 +151,7 @@ void dlio::MapNode::callbackGlobalMap(const sensor_msgs::msg::PointCloud2::Const
   pcl::toROSMsg(*cloud_local_filtered_out, local_map_msg);
   local_map_msg.header.frame_id = "base_link";
   local_map_msg.header.stamp = this->get_clock()->now();
-  local_map_pub_->publish(local_map_msg);
+  local_map_pub->publish(local_map_msg);
 }
 
 void dlio::MapNode::savePCD(std::shared_ptr<direct_lidar_inertial_odometry::srv::SavePCD::Request> req,
