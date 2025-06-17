@@ -20,6 +20,8 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
+#include <geometry_msgs/msg/pose_array.hpp>
+
 
 // PCL
 #include <pcl/filters/voxel_grid.h>
@@ -48,6 +50,7 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr map_pub;
 
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr local_map_pub;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr global_map_pub;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr global_map_sub;
   void callbackGlobalMap(const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg);
   rclcpp::TimerBase::SharedPtr map_pub_timer_;
@@ -55,7 +58,7 @@ private:
 
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr latest_odom_sub;
   nav_msgs::msg::Odometry::ConstSharedPtr latest_odom_;
-  void callbackLatestOdom(const nav_msgs::msg::Odometry::ConstSharedPtr &odom);
+  void callbackLatestOdom(const nav_msgs::msg::Odometry::ConstSharedPtr odom);
 
   rclcpp::Service<direct_lidar_inertial_odometry::srv::SavePCD>::SharedPtr save_pcd_srv;
 
@@ -66,5 +69,10 @@ private:
 
   double leaf_size_;
 
-  // for local map
+  // republish for BLIO
+  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr latest_odom_pub;
+  rclcpp::Subscription<geometry_msgs::msg::PoseArray>::SharedPtr kf_pose_array_sub;
+  void poseArrayKFCallback(const geometry_msgs::msg::PoseArray::ConstSharedPtr kf_pose_array);
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr kf_repub;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr keyframe_cloud_;
 };

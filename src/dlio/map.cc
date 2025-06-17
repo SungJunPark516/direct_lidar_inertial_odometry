@@ -25,6 +25,7 @@ dlio::MapNode::MapNode() : Node("dlio_map_node")
                                                                                 std::bind(&dlio::MapNode::callbackKeyframe, this, std::placeholders::_1), keyframe_sub_opt);
 
   this->map_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>("map", 100);
+  this->global_map_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>("/Globalmap", 100);
 
   this->save_pcd_cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
   this->save_pcd_srv = this->create_service<direct_lidar_inertial_odometry::srv::SavePCD>("save_pcd",
@@ -34,10 +35,17 @@ dlio::MapNode::MapNode() : Node("dlio_map_node")
 
   // local map
   this->local_map_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>("/Localmap", 100);
-  this->global_map_sub = this->create_subscription<sensor_msgs::msg::PointCloud2>("map", 10,
+  this->global_map_sub = this->create_subscription<sensor_msgs::msg::PointCloud2>("/Globalmap", 10,
                                                                                   std::bind(&dlio::MapNode::callbackGlobalMap, this, std::placeholders::_1));
   this->latest_odom_sub = this->create_subscription<nav_msgs::msg::Odometry>("/dlio/odom_node/odom", 10,
                                                                              std::bind(&dlio::MapNode::callbackLatestOdom, this, std::placeholders::_1));
+  this->latest_odom_pub = this->create_publisher<nav_msgs::msg::Odometry>("/dlio/map_node/odom/repub", 10);
+  // republish keyframes
+  this->kf_pose_array_sub = this->create_subscription<geometry_msgs::msg::PoseArray>(
+      "/dlio/odom_node/keyframes", 10,
+      std::bind(&dlio::MapNode::poseArrayKFCallback, this, std::placeholders::_1));
+  this->kf_repub = this->create_publisher<sensor_msgs::msg::PointCloud2>("/dlio/odom_node/keyframes/repub", 10);
+  this->keyframe_cloud_ = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
   pcl::console::setVerbosityLevel(pcl::console::L_ERROR);
   start();
 }
@@ -71,10 +79,18 @@ void dlio::MapNode::publishMaps()
     pcl::toROSMsg(*this->dlio_map, global_map_msg);
     global_map_msg.header.stamp = this->get_clock()->now();
     global_map_msg.header.frame_id = "map";
-    this->map_pub->publish(global_map_msg);
+    this->global_map_pub->publish(global_map_msg);
   }
 
   // 2. local map은 이미 global_map_sub callback에서 처리 중
+  //3. publish keyframe
+  sensor_msgs::msg::PointCloud2 pc2_msg;
+  pcl::toROSMsg(*keyframe_cloud_, pc2_msg);
+  pc2_msg.header.stamp = this->get_clock()->now();
+  pc2_msg.header.frame_id = "map";
+  kf_repub->publish(pc2_msg);
+
+
 }
 
 void dlio::MapNode::callbackKeyframe(const sensor_msgs::msg::PointCloud2::ConstSharedPtr &keyframe)
@@ -103,10 +119,43 @@ void dlio::MapNode::callbackKeyframe(const sensor_msgs::msg::PointCloud2::ConstS
   }
 }
 
-void dlio::MapNode::callbackLatestOdom(const nav_msgs::msg::Odometry::ConstSharedPtr &odom)
+void dlio::MapNode::poseArrayKFCallback(const geometry_msgs::msg::PoseArray::ConstSharedPtr kf_pose_array)
 {
-  this->latest_odom_ = odom;
+  
+  for (const auto &pose : kf_pose_array->poses)
+  {
+    pcl::PointXYZI point;
+    point.x = pose.position.x;
+    point.y = pose.position.y;
+    point.z = pose.position.z;
+    point.intensity = 1.0;  // intensity can be set to a constant value or calculated based on some criteria
+    keyframe_cloud_->points.push_back(point);
+  }
+
+  keyframe_cloud_->width = keyframe_cloud_->points.size();
+  keyframe_cloud_->height = 1; // unorganized point cloud
+  keyframe_cloud_->is_dense = true;
+
+  sensor_msgs::msg::PointCloud2 kf_msg;
+  pcl::toROSMsg(*keyframe_cloud_, kf_msg);
+  kf_msg.header.frame_id = "base_link";
+  kf_msg.header.stamp = this->get_clock()->now();
+
+  this->kf_repub->publish(kf_msg);
 }
+
+void dlio::MapNode::callbackLatestOdom(const nav_msgs::msg::Odometry::ConstSharedPtr odom)
+{
+  latest_odom_ = odom;
+
+  // republish for BLIO
+  nav_msgs::msg::Odometry odom_repub = *latest_odom_;  // 전체 복사
+  odom_repub.header.stamp = this->get_clock()->now();  // 타임스탬프 새로 설정
+  odom_repub.header.frame_id = "map";  // 프레임만 수정
+
+  latest_odom_pub->publish(odom_repub);
+}
+
 
 void dlio::MapNode::callbackGlobalMap(const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg)
 {
